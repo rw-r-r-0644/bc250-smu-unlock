@@ -1,4 +1,6 @@
 from .codec import pack_u32
+from .errors import SmuRejected
+from .mailbox import Bc250Mailbox
 
 
 class Queue2Mixin:
@@ -84,7 +86,9 @@ class Queue2Mixin:
 
     def q2_0x23_append(self, args):
         """msg 0x23: subqueue-ring append (the append-bug primitive)."""
-        return self.send_message(2, 0x23, args, check_status=False)
+        st, _ = self.send_message(2, 0x23, args, check_status=False)
+        if st != Bc250Mailbox.SMU_RETURN_OK:
+            raise SmuRejected(2, 0x23, st)
 
 
     def _q2_0x2c_probably_power_limit_settings(self):

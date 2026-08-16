@@ -1,6 +1,7 @@
 """Composites built on the queue wrappers: SMU-local SRAM access + dump."""
 import ctypes
 import os
+import struct
 
 from .errors import SmuError, SmuRejected
 from .mailbox import Bc250Mailbox
@@ -67,6 +68,24 @@ class PrimitiveMixin:
         """Write one 32-bit word to SMU-local addr (gated)."""
         self.sec_set_write_ptr(addr)
         self.sec_write_through32(value)
+
+    def smu_read_bytes(self, addr: int, size: int) -> bytes:
+        """read `size` bytes at smu-local addr, dword-granular."""
+        out = b""
+        for base in range(addr & ~3, addr + size, 4):
+            w = self.smu_read(base, 1)
+            lo = max(0, addr - base)
+            hi = min(4, addr + size - base)
+            out += w[lo:hi]
+        return out
+
+    def smu_write_bytes(self, addr: int, data: bytes):
+        """byte-granular write via per-byte dword rmw."""
+        for j, b in enumerate(data):
+            a = addr + j
+            dword = struct.unpack("<I", self.smu_read(a & ~3, 1))[0]
+            shift = (a & 3) * 8
+            self.smu_write32(a & ~3, (dword & ~(0xFF << shift)) | (b << shift))
 
     def smu_memset32(self, addr: int, value: int, words: int):
         """Fill `words` 32-bit words at SMU-local addr (gated)."""

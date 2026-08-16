@@ -1,3 +1,4 @@
+import fcntl
 import os
 import struct
 
@@ -5,8 +6,9 @@ import struct
 class Bc250PciTransport:
     """PCI config-space SMN window of the root device. Requires root."""
 
-    def __init__(self, bdf: str = "0000:00:00.0"):
+    def __init__(self, bdf: str = "0000:00:00.0", use_flock: bool = True):
         self._config_path = f"/sys/bus/pci/devices/{bdf}/config"
+        self._use_flock = use_flock
         self._fd = None
 
     def open(self) -> None:
@@ -20,10 +22,26 @@ class Bc250PciTransport:
             os.close(self._fd)
             self._fd = None
 
+    def _lock(self) -> None:
+        if self._use_flock and self._fd is not None:
+            fcntl.flock(self._fd, fcntl.LOCK_EX)
+
+    def _unlock(self) -> None:
+        if self._use_flock and self._fd is not None:
+            fcntl.flock(self._fd, fcntl.LOCK_UN)
+
     def read_smu_reg(self, reg: int) -> int:
-        os.pwrite(self._fd, struct.pack("<I", reg), 0xB8)
-        return struct.unpack("<I", os.pread(self._fd, 4, 0xBC))[0]
+        self._lock()
+        try:
+            os.pwrite(self._fd, struct.pack("<I", reg), 0xB8)
+            return struct.unpack("<I", os.pread(self._fd, 4, 0xBC))[0]
+        finally:
+            self._unlock()
 
     def write_smu_reg(self, reg: int, value: int) -> None:
-        os.pwrite(self._fd, struct.pack("<I", reg), 0xB8)
-        os.pwrite(self._fd, struct.pack("<I", value), 0xBC)
+        self._lock()
+        try:
+            os.pwrite(self._fd, struct.pack("<I", reg), 0xB8)
+            os.pwrite(self._fd, struct.pack("<I", value), 0xBC)
+        finally:
+            self._unlock()

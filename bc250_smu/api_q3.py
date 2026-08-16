@@ -1,4 +1,4 @@
-from .codec import mv_to_vid, pack_s16, pack_u32, pack_vid_offset, vid_to_mv
+from .codec import mv_to_vid, pack_f32, pack_s16, vid_to_mv
 from .mailbox import Bc250Mailbox
 
 class Queue3Mixin:
@@ -177,18 +177,18 @@ class Queue3Mixin:
 
     def q3_0x4d_set_cpu_vid_offset_large(self, offset_v: float) -> None:
         """Set CPU VID float offset (valid range about -0.2..0.2 V)."""
-        return self.send_message(3, 0x4D, [offset_v])
+        return self.send_message(3, 0x4D, [pack_f32(offset_v)])
 
     def q3_0x4e_set_gpu_vid_offset_large(self, offset_v: float) -> None:
         """Set GPU VID float offset (valid range about -0.2..0.2 V)."""
-        return self.send_message(3, 0x4E, [offset_v])
+        return self.send_message(3, 0x4E, [pack_f32(offset_v)])
 
     def _q3_0x4f(self) -> int | None:
         return self.send_message(3, 0x4F)
 
     def q3_0x50_scale_f_vid_curve(self, value: int) -> None:
         """Set VID curve scaling (signed 16-bit, limit 0x3FFF)."""
-        return self.send_message(3, 0x50, [value])
+        return self.send_message(3, 0x50, [pack_s16(value)])
 
     def _q3_0x51_set_cpu_coeff(self, value: int = 0) -> int | None:
         return self.send_message(3, 0x51, [value])
