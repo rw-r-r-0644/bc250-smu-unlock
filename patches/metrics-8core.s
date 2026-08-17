@@ -65,6 +65,10 @@ s32i a8, a2, 0xec
 s32i a11, a2, 0xf4
 .section .p_29946, "ax"
 s32i a10, a2, 0xfc
+.section .p_29960, "ax"
+l32i a10, a4, 0x104
+.section .p_2997a, "ax"
+s32i a10, a13, 0x204
 .section .p_299c2, "ax"
 s16i a10, a2, 0x88
 .section .p_299dd, "ax"
