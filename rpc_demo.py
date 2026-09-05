@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 rpc_demo - call-anything primitive usage example.
+
+NOTE: run this after patcher.py !
 """
 import os
 import sys
@@ -17,8 +19,6 @@ if os.geteuid() != 0:
 
 smu = Bc250Smu()
 try:
-    unlock(smu)
-
     # test VCN thing (credits to dantisnfs)
     smu.call(FN_PLL_POWER_SET, 6, 1)
     smu.call(FN_CLK_DOMAIN_UNGATE, 0x16)
