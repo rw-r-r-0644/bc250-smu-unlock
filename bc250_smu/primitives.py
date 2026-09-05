@@ -104,6 +104,23 @@ class PrimitiveMixin:
         self.sec_set_smn_write_addr(addr)
         self.sec_smn_write32(value)
 
+    def call(self, fn: int, *args: int) -> int:
+        """Call arbitrary SMU firmware function with up to 5 args; return result.
+
+        Requires the call-anything handler (patches/rpc.s) to be installed, which patcher.py does at boot.
+        ABI (see patches/rpc.s): scratch block at 0x12080 holds +0x00 fn, +0x04..+0x14 args, +0x18 result.
+        triggered by q3 msg-0x22 with arg 0x7f (invalid table-id fallthrough).
+        TODO: we can prolly make this a bit cleaner.
+        """
+        if len(args) > 5:
+            raise ValueError("max 5 args")
+        block = struct.pack("<I", fn)
+        block += b"".join(struct.pack("<I", a) for a in args)
+        block += b"\x00" * (0x18 - len(block))
+        self.smu_write_bytes(0x12080, block)
+        self.send_message(3, 0x22, [0x7f], check_status=False)
+        return struct.unpack("<I", self.smu_read_bytes(0x12080 + 0x18, 4))[0]
+
     WINDOW_BASE = 0x3030
 
     def window_read(self, words: int = 24576):

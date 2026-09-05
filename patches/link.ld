@@ -107,4 +107,9 @@ SECTIONS {
 	.p_29ca5 : { *(.p_29ca5) }
 	. = 0x29cb2;
 	.p_29cb2 : { *(.p_29cb2) }
+
+	. = 0x1ba6e;
+	.p_1ba6e : { *(.p_1ba6e) }
+	. = 0x12000;
+	.p_rpcbody : { *(.p_rpcbody) }
 }
