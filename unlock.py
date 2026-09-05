@@ -38,10 +38,10 @@ PROBE_ADDR = 0x0005A870
 # fortunately nothing else seems to use this as far as I can tell
 _subq4_cur_idx = 0
 
-def overwrite_tr_table_ptr(b):
+def overwrite_tr_table_ptr(smu: Bc250Smu, b):
     """
     a bit involved :S
-    
+
     we overflow ring subqueue 4 (the last), and end up overwriting
     subqueue counters (which come right after).
 
@@ -128,7 +128,7 @@ def _do_unlock(smu: Bc250Smu, va, phys) -> bool:
     # point the transfer table to T0 = (P - 0x1C); since it's all zeros,
     # it'll look as if there are no in-use entries and the entry at E0=T0+0x18
     # with data at E0+4 (=P) will be allocated. the next transfer will place data over P
-    overwrite_tr_table_ptr(P - 0x1C)
+    overwrite_tr_table_ptr(smu, P - 0x1C)
 
     # transfer the fake table over P
     smu.transfer_engine_dram2smu(
@@ -152,7 +152,7 @@ def _do_unlock(smu: Bc250Smu, va, phys) -> bool:
 
     # switch to fake transfer table
     ctypes.memset(ctypes.c_void_p(va), 0, 4)
-    overwrite_tr_table_ptr(P)
+    overwrite_tr_table_ptr(smu, P)
 
     # do transfer
     # will skip our fake entry0 of size N at P+0x18 and end up at P + 0x18 + 4*N,
