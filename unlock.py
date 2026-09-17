@@ -188,10 +188,21 @@ def unlock(smu: Bc250Smu) -> bool:
         free_page(va)
 
 
-if __name__ == "__main__":
+def main(argv=None) -> int:
+    if os.geteuid() != 0:
+        print("needs root", file=sys.stderr)
+        return 1
     sys.stdout.reconfigure(line_buffering=True)
     smu = Bc250Smu()
     try:
         unlock(smu)
     except (SmuError, PermissionError) as e:
-        sys.exit(str(e))
+        print(e, file=sys.stderr)
+        return 1
+    finally:
+        smu.close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

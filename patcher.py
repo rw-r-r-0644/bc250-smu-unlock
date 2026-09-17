@@ -6,6 +6,7 @@ apply or verify firmware patches from an intel-hex file.
 import argparse
 import os
 import sys
+from importlib.resources import files as _res_files
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bc250_smu import Bc250Smu
@@ -27,14 +28,18 @@ def read_hex(path):
     return sorted(sites)
 
 
-def main():
-    base = os.path.dirname(os.path.abspath(__file__))
+def _default_hex() -> str:
+    return str(_res_files("bc250_smu").joinpath("patches.hex"))
+
+
+def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check", action="store_true", help="verify without writing")
-    ap.add_argument("--hex", default=os.path.join(base, "patches.hex"))
-    ns = ap.parse_args()
+    ap.add_argument("--hex", default=_default_hex())
+    ns = ap.parse_args(argv)
     if os.geteuid() != 0:
-        sys.exit("needs root")
+        print("needs root", file=sys.stderr)
+        return 1
 
     patches = read_hex(ns.hex)
     smu = Bc250Smu()
@@ -54,8 +59,8 @@ def main():
                 ok &= got == new
     finally:
         smu.close()
-    sys.exit(0 if ok else 1)
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

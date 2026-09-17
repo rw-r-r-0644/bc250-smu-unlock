@@ -27,21 +27,23 @@ def read_mask():
     finally:
         t.close()
 
-def main():
+def main(argv=None) -> int:
     if os.geteuid() != 0:
-        sys.exit("needs root")
+        print("needs root", file=sys.stderr)
+        return 1
 
-    if len(sys.argv) < 2:
+    args = sys.argv[1:] if argv is None else list(argv)
+
+    if not args:
         print("current core presence mask: 0x%02X" % read_mask())
-        return
+        return 0
 
-    mask = int(sys.argv[1], 0) & 0xFF
-    force = "-f" in sys.argv
+    mask = int(args[0], 0) & 0xFF
     before = read_mask()
     print("current core presence mask: 0x%02X" % before)
     if before == mask:
         print("already set - nothing to do")
-        return
+        return 0
 
     smu = Bc250Smu()
     try:
@@ -54,9 +56,11 @@ def main():
     print("after write: 0x%02X" % after)
 
     if after != mask:
-        sys.exit("mask did not take")
+        print("mask did not take", file=sys.stderr)
+        return 1
     print("OK - reboot to bring up the new cores")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
